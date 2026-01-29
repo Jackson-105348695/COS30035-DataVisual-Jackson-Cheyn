@@ -1,9 +1,14 @@
-//Version 3
-//Added axis
+//Version 4
+//Fixed Country bug where it would automatically group country data
+//Added year sort
+//Added more comments to code
 
 //Setting width and hight variables
 var w = 1200;
 var h = 300;
+
+//Setting base sort number to 1 to say not to sort data
+sortNum = 1;
 
 //Imports csv data defining 3 pieces of data then loading it into the variable dataset
 d3.csv("sepsis_30day_data.csv", function(d)
@@ -21,11 +26,29 @@ d3.csv("sepsis_30day_data.csv", function(d)
 
 function barChart(data)
 {
-    //Creating and loading data onto the x axis and specifying spacing
-    var xscale = d3.scaleBand()
-                    .domain(d3.range(data.length))
-                    .rangeRound([0,w])
-                    .paddingInner(0.05);
+    if (sortNum == 2) //Checks what sort function we are using (Country)
+    {
+        var xscale = d3.scaleBand() //Creating and loading data onto the x axis and specifying spacing
+                        .domain(data.map(d => d.Country))
+                        .rangeRound([0,w])
+                        .paddingInner(0.05);
+    }
+
+    else if (sortNum == 3) //Checks what sort function we are using (Year)
+    {
+        var xscale = d3.scaleBand() //Creating and loading data onto the x axis and specifying spacing
+                        .domain(data.map(d => d.date))
+                        .rangeRound([0,w])
+                        .paddingInner(0.05);
+    }
+
+    else
+    {
+        var xscale = d3.scaleBand() //Creating and loading data onto the x axis and specifying spacing
+                        .domain(d3.range(data.length))
+                        .rangeRound([0,w])
+                        .paddingInner(0.05);
+    }
 
     //Loads data onto y scale
     var yscale = d3.scaleLinear() 
@@ -65,7 +88,21 @@ function barChart(data)
         .append("rect")
         .attr("x", function(d, i)
         {
-            return xscale(i) +40; //Applies x scale
+            if (sortNum == 2) //Checks what sort function we are using (Country)
+            {
+                return xscale(d.Country) +40; //Applies x scale
+            }
+
+            else if (sortNum == 3) //Checks what sort function we are using (year)
+            {
+                return xscale(d.date) +40; //Applies x scale
+            }
+
+            else
+            {
+                return xscale(i) +40; //Applies x scale
+            }
+            
         })
         .attr("y", function(d)
         {
@@ -95,4 +132,71 @@ function barChart(data)
                 .attr("fill", "black")
                 d3.select("#tooltip").remove();
         })
+}
+
+//This next section is for when one of the buttons is pressed the data on screen will react
+function button(num)
+{
+    if (num == 1) //30 Days dataset SVG
+    {
+        d3.csv("sepsis_30day_data.csv", function(d)
+        {
+            return {
+                Country: d.Reference,
+                date: +d.TIME_PERIOD,
+                number: +d.OBS_VALUE
+            };
+        }).then(function(data)
+        {
+            dataset = data;
+            d3.select("#chart").selectAll("*").remove();
+            barChart(dataset);
+        });
+    }
+
+    if (num == 2) //Hospital dataset SVG
+    {
+        d3.csv("sepsis_hospital_data.csv", function(d)
+        {
+            return {
+                Country: d.Reference,
+                date: +d.TIME_PERIOD,
+                number: +d.OBS_VALUE
+            };
+        }).then(function(data)
+        {
+            dataset = data;
+            d3.select("#chart").selectAll("*").remove();
+            barChart(dataset);
+        });
+    }
+
+    if (num == 3) //Individual Sort
+    {
+        sortNum = 1; //Allows barChart to know what sort we are using
+        d3.select("#chart").selectAll("*").remove();
+        barChart(dataset, sortNum);
+    }
+
+    if (num == 4) //Country Sort
+    {
+        sortNum = 2; //Allows barChart to know what sort we are using
+        d3.select("#chart").selectAll("*").remove();
+        barChart(dataset, sortNum);
+    }
+
+    if (num == 5) //Year sort
+    {
+        sortNum = 3; //Allows barChart to know what sort we are using
+        dataset.sort((a, b) => b.date - a.date);
+        d3.select("#chart").selectAll("*").remove();
+        barChart(dataset, sortNum);
+    }
+
+    if (num == 6) //High to low sort
+    {
+        dataset.sort((a, b) => b.number - a.number);
+        d3.select("#chart").selectAll("*").remove();
+        barChart(dataset);
+    }
 }
