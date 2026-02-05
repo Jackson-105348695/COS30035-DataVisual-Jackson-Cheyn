@@ -6,6 +6,7 @@
 //Corrected the direction of the numbers
 //y and hight where doing what the other was supposed to do that has now been corrected
 //Centered text inside of bar
+//Changed the high of the average text as when using country filter text would be outside of svg meaning it is not displayed
 
 //Setting width and hight variables
 var w = 1200;
@@ -161,7 +162,7 @@ function barChart(data)
     //Creates text displaying the average
     svg.append("text")
         .attr("x", w - 50)
-        .attr("y", yscale(average) - 100)
+        .attr("y", yscale(average))
         .attr("fill", "black")
         .style("font-size", "12px")
         .text("Average: " + average.toFixed(2)); //round to 2 decimal points
