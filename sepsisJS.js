@@ -1,7 +1,11 @@
-//Version 4
-//Fixed Country bug where it would automatically group country data
-//Added year sort
-//Added more comments to code
+//Version 5
+//Added Average line
+//Added gradient to charts
+//Added a country filter
+//Fixed Numbers being displayed
+//Corrected the direction of the numbers
+//y and hight where doing what the other was supposed to do that has now been corrected
+//Centered text inside of bar
 
 //Setting width and hight variables
 var w = 1200;
@@ -21,6 +25,7 @@ d3.csv("sepsis_30day_data.csv", function(d)
 }).then(function(data)
 {
     dataset = data;
+    maindata = dataset;
     barChart(dataset);
 });
 
@@ -49,6 +54,11 @@ function barChart(data)
                         .rangeRound([0,w])
                         .paddingInner(0.05);
     }
+
+    //Create a colour gradient from blue to red
+    colorScale = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => d.number)])
+                    .range(["blue", "red"]);
 
     //Loads data onto y scale
     var yscale = d3.scaleLinear() 
@@ -106,32 +116,55 @@ function barChart(data)
         })
         .attr("y", function(d)
         {
-            return h - yscale(d.number) +10; //Applies y scale
+            return yscale(d.number) +10; //Applies y scale
         })
         .attr("width", xscale.bandwidth()) //Adjust width of bars to fit all data in svg
         .attr("height", function(d)
         {
-            return yscale(d.number); //adjust hight of bars to fit in svg
+            return h - yscale(d.number); //adjust hight of bars to fit in svg
         })
-        .attr("fill", "black") //Sets colour of bars to black
-        .on('mouseover', function(event, d) //This function applies when you mouse is hovered over a specific bar in the graph
+        .attr("fill", d => colorScale(d.number)) //Sets colour of bars to black
+        .on('mouseover', function(d, i) //This function applies when you mouse is hovered over a specific bar in the graph
         {
             d3.select(this)
                 .attr("fill", "orange"); //Sets colour of bar to orange when hovering over
-                var box = this.getBBox()
-
+                
+                var box = this.getBBox();
                 svg.append("text") //Writes variable onto the bar as well as centres the text on the bar
                     .attr("id", "tooltip")
-                    .attr("x", box.x + box.width / 2)
-                    .attr("y", box.y + 15)
-                    .text(d.number); 
+                    .attr("x", box.x + box.width / 1.5)
+                    .attr("y", box.y + box.height / 2.4)
+                    .attr("transform", "rotate(-90 " + (box.x + box.width / 1.5) + " " + (box.y + box.height / 2.4) + ")")
+                    .text(d.number);
         })
-        .on('mouseout', function(d) //This function sets it so when the mouse is no longer hovering over the bar it will revert back to black and remove the text
+        .on('mouseout', function(event, d) //This function sets it so when the mouse is no longer hovering over the bar it will revert back to black and remove the text
         {
             d3.select(this)
-                .attr("fill", "black")
+                .attr("fill", d => colorScale(d.number))
                 d3.select("#tooltip").remove();
         })
+
+    average = d3.mean(data, d=> d.number); //Creates an average of all the data
+    
+    //Draws a red line showing the average
+    svg.append("line")
+        //start of line
+        .attr("x1", 40)
+        .attr("y1", yscale(average) + 10)
+        //end of line
+        .attr("x2", w + 40)
+        .attr("y2", yscale(average) + 10)
+        //colour and width
+        .attr("stroke", "black")
+        .attr("stoke-width", 2);
+
+    //Creates text displaying the average
+    svg.append("text")
+        .attr("x", w - 50)
+        .attr("y", yscale(average) - 100)
+        .attr("fill", "black")
+        .style("font-size", "12px")
+        .text("Average: " + average.toFixed(2)); //round to 2 decimal points
 }
 
 //This next section is for when one of the buttons is pressed the data on screen will react
@@ -149,6 +182,7 @@ function button(num)
         }).then(function(data)
         {
             dataset = data;
+            maindata = dataset;
             d3.select("#chart").selectAll("*").remove();
             barChart(dataset);
         });
@@ -166,6 +200,7 @@ function button(num)
         }).then(function(data)
         {
             dataset = data;
+            maindata = dataset;
             d3.select("#chart").selectAll("*").remove();
             barChart(dataset);
         });
@@ -199,4 +234,20 @@ function button(num)
         d3.select("#chart").selectAll("*").remove();
         barChart(dataset);
     }
+}
+
+//country filter so you can view specific countries data
+function countryFilter(countryName)
+{
+    if (countryName == "all")
+    {
+        dataset = maindata; //imports all countries back to normal dataset
+    }
+    else
+    {
+        dataset = maindata.filter(d => d.Country == countryName); //Filters only specific country name
+    }
+
+    d3.select("#chart").selectAll("*").remove();
+        barChart(dataset);
 }
